@@ -1,0 +1,30 @@
+# AcikBulucu ayarlari
+otomatik-tarama:
+  aktif: true
+  dakika: 30
+  # true yapilirsa sadece guvenli onarimlar kendiliginden uygulanir.
+  # Her seferinde once yedek alinir (plugins/AcikBulucu/yedek/).
+  otomatik-onar: false
+
+# Eksik claim script'i otomatik uretilirken kullanilan degerler
+claim-sablonu:
+  ilk-fiyat: 5000
+  ilk-blok: 1000
+  genisletme-fiyat: 1000
+  genisletme-blok: 250
+
+# Spawn kontrolunda atlanacak dunyalar (adinda bu kelimeler gecenler). Nether/End zaten atlanir.
+dunya-kontrol:
+  haric-kelimeler: [skyblock, island, void]
+
+# Yapay zeka asistani (/ai). Varsayilan KAPALI.
+# ONEMLI: anahtarini kimseyle paylasma. Bu dosyaya erisen herkes anahtari gorur.
+ai:
+  aktif: false
+  # gemini  -> Google Gemini (ucretsiz katman var, anahtar: aistudio.google.com)
+  # openai-uyumlu -> OpenAI, Groq, OpenRouter vb. (asagidaki url gerekir)
+  saglayici: gemini
+  anahtar: ""
+  model: gemini-2.5-flash
+  url: ""
+  max-dosya-kb: 100

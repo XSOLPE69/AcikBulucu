@@ -1,4 +1,4 @@
-# AcikBulucu v2.1 (bulur + kendi onarır)
+# AcikBulucu v3.0 (bulur + kendi onarır + yapay zeka asistanı)
 
 | Komut | Ne yapar |
 |---|---|
@@ -32,3 +32,21 @@ Her onarım `plugins/AcikBulucu/yedek/<tarih>/` altına kaydedilir.
 ## Derleme
 GitHub: repoya yükle -> Actions -> Artifacts'tan `AcikBulucu.jar` indir -> `plugins/` klasörüne at.
 Ya da JDK 17 + Maven ile `mvn package`.
+
+
+## Yapay zeka asistanı (/ai) - v3
+Varsayılan KAPALI. Açmak için `plugins/AcikBulucu/config.yml` içinde `ai:` bölümünü doldur
+(config dosyan eskiyse sil, sunucu yeniden oluşturur, ya da bu bölümü elle ekle).
+
+| Komut | Ne yapar |
+|---|---|
+| `/ai <isteğin>` | Öneri üretir (dosya + komut), UYGULAMAZ |
+| `/ai ekle <dosya>` | Bir dosyayı yapay zekaya gösterir (şifre/anahtar satırları maskelenir) |
+| `/ai goster [no]` | Öneriyi veya bir dosyanın tamamını gösterir |
+| `/ai onayla` | Öneriyi YEDEK ALARAK uygular, Skript'i yükler, hata varsa söyler |
+| `/ai duzelt` | Skript hatalarını yapay zekaya verip düzeltme ister |
+| `/ai reddet` / `/ai geriyukle` | İptal / son uygulamayı geri al (spawn dahil) |
+
+Güvenlik: yazma sadece `plugins/Skript/scripts/*.sk` ve `plugins/**/*.yml`; op/deop/stop/restart/reload komutları yasak;
+AcikBulucu'nun kendi klasörü yazılamaz/okunamaz; hiçbir şey onaysız uygulanmaz.
+Sağlayıcılar: `gemini` (ücretsiz katman var) veya `openai-uyumlu` (OpenAI, Groq, OpenRouter...).
