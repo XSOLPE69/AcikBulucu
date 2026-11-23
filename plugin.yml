@@ -1,28 +1,19 @@
-name: AcikBulucu
-version: 3.0.0
-main: tr.acikbulucu.AcikBulucu
-api-version: '1.13'
+name: AcikBulucuAI
+version: 2.2.0
+main: tr.acikbulucuai.AcikBulucuAI
+api-version: '1.20'
 author: XSOLPE_YT
-description: Sunucudaki eksikleri bulur ve guvenli olanlari yedek alarak kendi onarir.
-softdepend: [Vault, Skript, PlaceholderAPI]
+description: Gemini ile calisan yonetici asistani. Ayar/Skript onerir, yonetici onaylayinca yedek alip uygular.
+softdepend: [Skript, AcikBulucu]
 commands:
-  aciklaribul:
-    description: Sunucuyu tarar, onarir
-    aliases: [acikbul, audit, açıklarıbul]
-    permission: acikbulucu.use
-    usage: /<command> [onizle|onar|geriyukle]
   ai:
-    description: Yapay zeka asistani (oneri uretir, onayinla uygular)
-    aliases: [yz, yapayzeka]
-    permission: acikbulucu.ai
-    usage: /<command> <istek>
+    description: Yapay zeka sunucu asistani
+    aliases: [yz, asistan]
+    usage: /<command> <soru> | onayla | reddet | bekleyen | goster | geriyukle | modeller | sifirla | yenile
 permissions:
-  acikbulucu.ai:
-    description: Yapay zeka asistanini kullanmak icin
+  acikbulucuai.kullan:
+    description: Yapay zekaya soru sormak ve onerileri gormek
     default: op
-  acikbulucu.use:
-    description: Sunucu denetim raporunu gormek icin
-    default: op
-  acikbulucu.onar:
-    description: Otomatik onarimi calistirmak ve geri almak icin
+  acikbulucuai.onayla:
+    description: Onerileri uygulamak ve geri almak
     default: op

@@ -1,30 +1,19 @@
-# AcikBulucu ayarlari
-otomatik-tarama:
-  aktif: true
-  dakika: 30
-  # true yapilirsa sadece guvenli onarimlar kendiliginden uygulanir.
-  # Her seferinde once yedek alinir (plugins/AcikBulucu/yedek/).
-  otomatik-onar: false
+# AcikBulucuAI ayarlari
+# ANAHTAR: https://aistudio.google.com adresinden ucretsiz alinir (kredi karti gerekmez).
+# Anahtari kimseye gosterme, sohbete/ekran goruntusune koyma. Bu dosya yapay zeka tarafindan da okunamaz.
+# Alternatif: anahtari sunucunun ortam degiskenine GEMINI_API_KEY olarak da verebilirsin.
+gemini:
+  anahtar: "BURAYA_ANAHTARI_YAPISTIR"
+  # Ucretsiz katmanda hangi modellerin acik oldugu zamanla degisir.
+  # Calismazsa oyunda /ai modeller yaz, listeden birini sec.
+  model: "gemini-3.5-flash-lite"
+  zaman-asimi-sn: 60
 
-# Eksik claim script'i otomatik uretilirken kullanilan degerler
-claim-sablonu:
-  ilk-fiyat: 5000
-  ilk-blok: 1000
-  genisletme-fiyat: 1000
-  genisletme-blok: 250
-
-# Spawn kontrolunda atlanacak dunyalar (adinda bu kelimeler gecenler). Nether/End zaten atlanir.
-dunya-kontrol:
-  haric-kelimeler: [skyblock, island, void]
-
-# Yapay zeka asistani (/ai). Varsayilan KAPALI.
-# ONEMLI: anahtarini kimseyle paylasma. Bu dosyaya erisen herkes anahtari gorur.
 ai:
-  aktif: false
-  # gemini  -> Google Gemini (ucretsiz katman var, anahtar: aistudio.google.com)
-  # openai-uyumlu -> OpenAI, Groq, OpenRouter vb. (asagidaki url gerekir)
-  saglayici: gemini
-  anahtar: ""
-  model: gemini-2.5-flash
-  url: ""
-  max-dosya-kb: 100
+  bekleme-sn: 3          # ayni kisi icin iki istek arasi
+  onay-suresi-dk: 10     # /ai onayla icin sure
+  max-tur: 4             # yapay zeka bir soruda en fazla kac kez dosya okuyabilir
+  skript-otomatik-yenile: true
+  skript-yenileme-komutu: "sk reload {script}"
+  # Yapay zekanin onerse bile calistirilamayacak komutlar:
+  yasakli-komutlar: [op, deop, stop, restart, reload, rl, rcon, execute, ai, yz, asistan, ban-ip, pardon-ip]
