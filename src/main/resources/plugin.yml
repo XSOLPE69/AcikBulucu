@@ -1,0 +1,20 @@
+name: AcikBulucu
+version: 2.0.0
+main: tr.acikbulucu.AcikBulucu
+api-version: '1.13'
+author: XSOLPE_YT
+description: Sunucudaki eksikleri bulur ve guvenli olanlari yedek alarak kendi onarir.
+softdepend: [Vault, Skript, PlaceholderAPI]
+commands:
+  aciklaribul:
+    description: Sunucuyu tarar, onarir
+    aliases: [acikbul, audit, açıklarıbul]
+    permission: acikbulucu.use
+    usage: /<command> [onizle|onar|geriyukle]
+permissions:
+  acikbulucu.use:
+    description: Sunucu denetim raporunu gormek icin
+    default: op
+  acikbulucu.onar:
+    description: Otomatik onarimi calistirmak ve geri almak icin
+    default: op
