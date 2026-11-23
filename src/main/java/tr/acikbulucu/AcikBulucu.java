@@ -106,6 +106,11 @@ public class AcikBulucu extends JavaPlugin {
             log.add("DELETE|" + f.getAbsolutePath());
         }
 
+        void spawn(World w) {
+            Location s = w.getSpawnLocation();
+            log.add("SPAWN|" + w.getName() + "|" + s.getBlockX() + "|" + s.getBlockY() + "|" + s.getBlockZ());
+        }
+
         void moved(File from, File to) throws IOException {
             Files.move(from.toPath(), to.toPath());
             log.add("MOVE|" + to.getAbsolutePath() + "|" + from.getAbsolutePath());
@@ -141,7 +146,7 @@ public class AcikBulucu extends JavaPlugin {
         scan();
         if (getConfig().getBoolean("otomatik-tarama.otomatik-onar", false) && hasFixable()) {
             getLogger().info("Otomatik onarim calisiyor...");
-            runRepair(Bukkit.getConsoleSender());
+            runRepair(Bukkit.getConsoleSender(), fixableList());
         }
         int critical = count(Level.KRITIK);
         if (critical > 0 && critical != lastCritical) {
@@ -183,7 +188,31 @@ public class AcikBulucu extends JavaPlugin {
                 return true;
             }
             scan();
-            runRepair(sender);
+            List<Finding> ord = ordered();
+            List<Finding> pick = new ArrayList<>();
+            if (args.length < 2) {
+                preview(sender);
+                return true;
+            }
+            if (args[1].equalsIgnoreCase("hepsi")) {
+                pick = fixableList();
+            } else {
+                for (int i = 1; i < args.length; i++) {
+                    int no;
+                    try {
+                        no = Integer.parseInt(args[i]);
+                    } catch (NumberFormatException e) {
+                        msg(sender, "&c'" + args[i] + "' geçerli bir numara değil.");
+                        return true;
+                    }
+                    if (no < 1 || no > ord.size() || ord.get(no - 1).fixer == null) {
+                        msg(sender, "&c" + no + " numaralı madde otomatik onarılabilir değil.");
+                        return true;
+                    }
+                    pick.add(ord.get(no - 1));
+                }
+            }
+            runRepair(sender, pick);
             return true;
         }
         if (sub.equals("geriyukle")) {
@@ -307,9 +336,11 @@ public class AcikBulucu extends JavaPlugin {
             }
         }
         if (!disabled.isEmpty()) {
+            String why = logReasons(disabled);
             add(Level.KRITIK, "Yüklü ama kapalı eklentiler: " + String.join(", ", disabled),
-                    "Açılırken hata vermiş. logs/latest.log içinde ilgili eklentinin hatasına bak; "
-                            + "genelde eksik bağımlılık ya da sürüm uyuşmazlığıdır.");
+                    "Açılırken hata vermiş (genelde eksik bağımlılık ya da sürüm uyuşmazlığı)."
+                            + (why.isEmpty() ? " logs/latest.log içinde eklentinin adını ara."
+                            : " Log'dan nedenler: " + why));
         }
         if (!legacy.isEmpty()) {
             add(Level.ONERI, "Eski (api-version belirtmeyen) eklentiler: " + String.join(", ", limit(legacy, 8)),
@@ -347,8 +378,9 @@ public class AcikBulucu extends JavaPlugin {
 
         if (nameContains("grim", "vulcan", "nocheatplus", "matrix", "spartan", "themis", "verus", "intave",
                 "aac", "anticheat") == null) {
-            add(Level.UYARI, "Anti-cheat eklentisi yok",
-                    "GrimAC (ücretsiz) veya benzeri bir anti-cheat kur.");
+            add(Level.UYARI, "Çalışan bir anti-cheat yok",
+                    "GrimAC (ücretsiz) veya benzeri bir anti-cheat kur. Yüklü ama kapalı bir anti-cheat "
+                            + "varsa (örneğin GrimACSelector) önce onu çalıştır.");
         }
         if (nameContains("backup") == null) {
             add(Level.ONERI, "Yedekleme eklentisi görünmüyor",
@@ -445,19 +477,8 @@ public class AcikBulucu extends JavaPlugin {
 
     /** logs/latest.log icindeki Skript hatalarini dosya ve satir bazinda gruplar. */
     private void checkSkriptErrors() {
-        File log = new File("logs/latest.log");
-        if (!log.isFile() || !has("Skript")) {
-            return;
-        }
-        String text;
-        try (RandomAccessFile raf = new RandomAccessFile(log, "r")) {
-            long len = raf.length();
-            long start = Math.max(0L, len - 1_000_000L);
-            raf.seek(start);
-            byte[] buf = new byte[(int) (len - start)];
-            raf.readFully(buf);
-            text = new String(buf, StandardCharsets.UTF_8);
-        } catch (IOException e) {
+        String text = logTail();
+        if (text == null || !has("Skript")) {
             return;
         }
         Map<String, TreeSet<Integer>> errs = new TreeMap<>();
@@ -480,9 +501,23 @@ public class AcikBulucu extends JavaPlugin {
             }
             parts.add(e.getKey() + " (satır " + String.join(", ", limit(lines, 6)) + ")");
         }
+        List<String> shown = new ArrayList<>();
+        for (Map.Entry<String, TreeSet<Integer>> e : errs.entrySet()) {
+            List<String> fl = readLines(new File(scriptsDir(), e.getKey()));
+            int c = 0;
+            for (Integer i : e.getValue()) {
+                if (c >= 4 || i < 1 || i > fl.size()) {
+                    continue;
+                }
+                String t = fl.get(i - 1).trim();
+                shown.add(e.getKey() + ":" + i + " -> " + (t.length() > 90 ? t.substring(0, 90) + "..." : t));
+                c++;
+            }
+        }
         add(Level.UYARI, "Son açılıştan beri Skript hata veren dosyalar: " + String.join("; ", limit(parts, 5)),
-                "Bu satırlar Skript'in anlamadığı kod içeriyor. Bilinen kalıplar 'onar' ile düzelir, "
-                        + "diğerleri için dosyayı açıp o satıra bak. Düzelttikten sonra /sk reload scripts yaz.");
+                (shown.isEmpty() ? "" : "Hatalı satırlar: " + String.join(" | ", limit(shown, 8)) + ". ")
+                        + "Bilinen kalıplar 'onar' ile düzelir, diğerleri için o satırı elle düzelt. "
+                        + "Sonra /sk reload scripts yaz.");
     }
 
     /** Claim satin alma script'i yoksa uretir. */
@@ -512,6 +547,9 @@ public class AcikBulucu extends JavaPlugin {
 
     private void checkWorlds() {
         for (World w : Bukkit.getWorlds()) {
+            if (w.getEnvironment() != World.Environment.NORMAL || skipWorld(w)) {
+                continue;
+            }
             Location s = w.getSpawnLocation();
             Material below = w.getBlockAt(s.getBlockX(), s.getBlockY() - 1, s.getBlockZ()).getType();
             String name = w.getName();
@@ -519,13 +557,13 @@ public class AcikBulucu extends JavaPlugin {
                 addFix(Level.KRITIK, "'" + name + "' dünyasının spawn noktası lavın üstünde",
                         "Güvenli bir bloğun üstünde durup /mv setspawn yaz.",
                         "'" + name + "' için yakında güvenli bir blok aranıp spawn oraya taşınacak",
-                        tx -> fixSpawn(w));
+                        tx -> fixSpawn(tx, w));
             } else if (below.isAir()) {
                 addFix(Level.UYARI, "'" + name + "' dünyasının spawn noktası havada/boşlukta",
                         "Multiverse 'konum güvensiz' hatasının sebebi budur. Sağlam bir bloğun üstünde "
                                 + "/mv setspawn yaz. Multiverse kendi spawn'ını ayrı tutar, otomatik düzeltme yetmezse bunu yap.",
                         "'" + name + "' için yakında güvenli bir blok aranıp spawn oraya taşınacak",
-                        tx -> fixSpawn(w));
+                        tx -> fixSpawn(tx, w));
             }
         }
     }
@@ -570,13 +608,7 @@ public class AcikBulucu extends JavaPlugin {
     // Onarimlar
     // ------------------------------------------------------------------
 
-    private void runRepair(CommandSender sender) {
-        List<Finding> fixable = new ArrayList<>();
-        for (Finding f : findings) {
-            if (f.fixer != null) {
-                fixable.add(f);
-            }
-        }
+    private void runRepair(CommandSender sender, List<Finding> fixable) {
         if (fixable.isEmpty()) {
             msg(sender, "&aOtomatik onarılabilir bir şey bulunamadı.");
             return;
@@ -618,16 +650,17 @@ public class AcikBulucu extends JavaPlugin {
     private void preview(CommandSender sender) {
         msg(sender, "&8&m-----&r &6&lOnarım Önizleme &8&m-----");
         boolean any = false;
-        for (Finding f : findings) {
-            if (f.fixer != null) {
-                msg(sender, "&e• &7" + f.fixDesc);
+        List<Finding> ord = ordered();
+        for (int i = 0; i < ord.size(); i++) {
+            if (ord.get(i).fixer != null) {
+                msg(sender, "&e" + (i + 1) + ". &7" + ord.get(i).fixDesc);
                 any = true;
             }
         }
         if (!any) {
             msg(sender, "&aOtomatik onarılacak bir şey yok.");
         } else {
-            msg(sender, "&7Uygulamak için &e/aciklaribul onar &7(önce yedek alınır).");
+            msg(sender, "&7Seçerek: &e/aciklaribul onar 4 8 &8| &7Hepsi: &e/aciklaribul onar hepsi &7(önce yedek alınır).");
         }
     }
 
@@ -667,6 +700,14 @@ public class AcikBulucu extends JavaPlugin {
                     case "MOVE":
                         if (Files.exists(Paths.get(p[1]))) {
                             Files.move(Paths.get(p[1]), Paths.get(p[2]), StandardCopyOption.REPLACE_EXISTING);
+                        }
+                        break;
+                    case "SPAWN":
+                        World sw = Bukkit.getWorld(p[1]);
+                        String[] c = p[2].split("\\|");
+                        if (sw != null && c.length == 3) {
+                            sw.setSpawnLocation(Integer.parseInt(c[0]), Integer.parseInt(c[1]),
+                                    Integer.parseInt(c[2]));
                         }
                         break;
                     default:
@@ -887,7 +928,7 @@ public class AcikBulucu extends JavaPlugin {
         skriptDirty = true;
     }
 
-    private void fixSpawn(World w) {
+    private void fixSpawn(Tx tx, World w) {
         Location s = w.getSpawnLocation();
         int cx = s.getBlockX();
         int cz = s.getBlockZ();
@@ -899,6 +940,7 @@ public class AcikBulucu extends JavaPlugin {
                     }
                     Block b = w.getHighestBlockAt(cx + dx, cz + dz);
                     if (isSafeGround(b)) {
+                        tx.spawn(w);
                         w.setSpawnLocation(b.getX(), b.getY() + 1, b.getZ());
                         return;
                     }
@@ -992,6 +1034,94 @@ public class AcikBulucu extends JavaPlugin {
         findings.add(new Finding(level, title, advice, fixDesc, fixer));
     }
 
+    private List<Finding> ordered() {
+        List<Finding> out = new ArrayList<>();
+        for (Level l : Level.values()) {
+            for (Finding f : findings) {
+                if (f.level == l) {
+                    out.add(f);
+                }
+            }
+        }
+        return out;
+    }
+
+    private List<Finding> fixableList() {
+        List<Finding> out = new ArrayList<>();
+        for (Finding f : findings) {
+            if (f.fixer != null) {
+                out.add(f);
+            }
+        }
+        return out;
+    }
+
+    private boolean skipWorld(World w) {
+        List<String> words = getConfig().getStringList("dunya-kontrol.haric-kelimeler");
+        if (words.isEmpty()) {
+            words = Arrays.asList("skyblock", "island", "void");
+        }
+        String n = w.getName().toLowerCase(Locale.ROOT);
+        for (String s : words) {
+            if (n.contains(s.toLowerCase(Locale.ROOT))) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private String logTail() {
+        File log = new File("logs/latest.log");
+        if (!log.isFile()) {
+            return null;
+        }
+        try (RandomAccessFile raf = new RandomAccessFile(log, "r")) {
+            long len = raf.length();
+            long start = Math.max(0L, len - 1_000_000L);
+            raf.seek(start);
+            byte[] buf = new byte[(int) (len - start)];
+            raf.readFully(buf);
+            return new String(buf, StandardCharsets.UTF_8);
+        } catch (IOException e) {
+            return null;
+        }
+    }
+
+    private String logReasons(List<String> names) {
+        String text = logTail();
+        if (text == null) {
+            return "";
+        }
+        Pattern bad = Pattern.compile(
+                "(?i)(error|warn|severe|could not|missing|requires|depend|unsupported|failed|disabling|incompatible)");
+        List<String> out = new ArrayList<>();
+        String[] lines = text.split("\r?\n");
+        for (String name : names) {
+            int c = 0;
+            for (String line : lines) {
+                if (c >= 2) {
+                    break;
+                }
+                if (line.toLowerCase(Locale.ROOT).contains(name.toLowerCase(Locale.ROOT))
+                        && bad.matcher(line).find()) {
+                    String t = line.replaceFirst("^\\[[0-9:]+ [A-Z]+\\]: ", "").trim();
+                    out.add(name + ": " + (t.length() > 160 ? t.substring(0, 160) + "..." : t));
+                    c++;
+                }
+            }
+        }
+        return String.join(" | ", limit(out, 6));
+    }
+
+    private List<String> readLines(File f) {
+        try {
+            String t = new String(Files.readAllBytes(f.toPath()), StandardCharsets.UTF_8);
+            return Arrays.asList(t.split("\r?\n", -1));
+        } catch (IOException e) {
+            return new ArrayList<>();
+        }
+    }
+
     private boolean hasFixable() {
         for (Finding f : findings) {
             if (f.fixer != null) {
@@ -1055,6 +1185,9 @@ public class AcikBulucu extends JavaPlugin {
 
     private String nameContains(String... parts) {
         for (Plugin pl : Bukkit.getPluginManager().getPlugins()) {
+            if (!pl.isEnabled()) {
+                continue;
+            }
             String low = pl.getName().toLowerCase(Locale.ROOT);
             for (String part : parts) {
                 if (low.contains(part)) {

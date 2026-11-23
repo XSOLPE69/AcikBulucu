@@ -12,3 +12,7 @@ claim-sablonu:
   ilk-blok: 1000
   genisletme-fiyat: 1000
   genisletme-blok: 250
+
+# Spawn kontrolunda atlanacak dunyalar (adinda bu kelimeler gecenler). Nether/End zaten atlanir.
+dunya-kontrol:
+  haric-kelimeler: [skyblock, island, void]

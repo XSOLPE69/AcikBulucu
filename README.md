@@ -1,10 +1,12 @@
-# AcikBulucu v2 (bulur + kendi onarır)
+# AcikBulucu v2.1 (bulur + kendi onarır)
 
 | Komut | Ne yapar |
 |---|---|
 | `/aciklaribul` | Tarar, KRİTİK/UYARI/ÖNERİ listeler. Onarılabilenlere `[otomatik onarılabilir]` yazar |
 | `/aciklaribul onizle` | Onarılacakları değiştirmeden listeler |
-| `/aciklaribul onar` | Güvenli olanları YEDEK ALARAK onarır, Skript'i yeniden yükler |
+| `/aciklaribul onar` | Numaralı onarım listesini gösterir |
+| `/aciklaribul onar 4 8` | Sadece seçtiğin maddeleri YEDEK ALARAK onarır |
+| `/aciklaribul onar hepsi` | Onarılabilen her şeyi uygular, Skript'i yeniden yükler |
 | `/aciklaribul geriyukle` | Son onarımı geri alır |
 
 Kısayollar: `/acikbul`, `/audit`, `/açıklarıbul`. Yetkiler: `acikbulucu.use`, `acikbulucu.onar` (varsayılan op).
